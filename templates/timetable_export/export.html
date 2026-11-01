@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}課表匯出（行事曆）{% endblock %}
+
+{% block extra_head %}
+<style>
+.tx-page{max-width:1000px;margin:0 auto}
+.tx-card{background:#fff;border:1px solid #dee2e6;border-radius:10px;padding:22px;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.tx-title{color:#1b365d;margin-bottom:8px}
+.tx-muted{color:#6c757d}
+.tx-form{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-top:14px}
+.tx-field label{display:block;font-weight:600;margin-bottom:5px}
+.tx-input{padding:10px;border:1px solid #ced4da;border-radius:6px;background:#fff;min-width:180px}
+.tx-btn{border:0;border-radius:6px;padding:11px 18px;background:#1b5e9b;color:#fff;cursor:pointer;font-weight:600}
+.tx-btn[disabled]{background:#adb5bd;cursor:not-allowed}
+.tx-table{width:100%;border-collapse:collapse}
+.tx-table th,.tx-table td{padding:11px;border-bottom:1px solid #e9ecef;text-align:left}
+.tx-table th{background:#f4f6f9}
+.tx-steps{margin:8px 0 0 20px;line-height:1.9}
+.tx-back{display:inline-block;margin-top:6px}
+@media(max-width:650px){.tx-table{font-size:13px}.tx-card{padding:15px}.tx-input{min-width:0;width:100%}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tx-page">
+    <div class="tx-card">
+        <h2 class="tx-title"><i class="fa-solid fa-calendar-days"></i> 課表匯出（.ics 行事曆）</h2>
+        <p class="tx-muted">把目前的課表匯出成 .ics 檔，匯入 Google 日曆、Apple 行事曆或 Outlook 後，每門課會依星期與節次自動每週重複。</p>
+
+        <form method="get" action="{% url 'timetable_export:download' %}" class="tx-form">
+            <div class="tx-field">
+                <label for="tx-start">開學日期</label>
+                <input id="tx-start" class="tx-input" type="date" name="start" value="{{ default_start }}" required>
+            </div>
+            <div class="tx-field">
+                <label for="tx-weeks">重複週數（1～{{ max_weeks }}）</label>
+                <input id="tx-weeks" class="tx-input" type="number" name="weeks" value="{{ default_weeks }}" min="1" max="{{ max_weeks }}" required>
+            </div>
+            <button type="submit" class="tx-btn" {% if not rows %}disabled{% endif %}>
+                <i class="fa-solid fa-download"></i> 下載 .ics
+            </button>
+        </form>
+    </div>
+
+    <div class="tx-card">
+        <h3 class="tx-title">將匯出的課程</h3>
+        {% if rows %}
+        <table class="tx-table">
+            <thead>
+                <tr><th>星期／節次</th><th>時間</th><th>課程名稱</th><th>教室</th><th>授課教師</th></tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    <td>{{ row.course.period_display }}</td>
+                    <td>{{ row.time_range }}</td>
+                    <td>{{ row.course.name }}</td>
+                    <td>{{ row.course.classroom }}</td>
+                    <td>{{ row.course.teacher }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="tx-muted">
+            目前沒有可匯出的課程。{% if role == 'admin' %}教務管理員沒有個人課表。{% endif %}
+        </p>
+        {% endif %}
+    </div>
+
+    <div class="tx-card">
+        <h3 class="tx-title">匯入方式</h3>
+        <ol class="tx-steps">
+            <li>先按上方「下載 .ics」，取得 timetable.ics。</li>
+            <li>Google 日曆（電腦版網頁）：設定 → 匯入及匯出 → 選擇檔案後匯入。</li>
+            <li>Apple 行事曆：直接開啟 .ics 檔，選擇要加入的行事曆。</li>
+            <li>Outlook：從「檔案」選單找到匯入功能，選擇 .ics 檔。</li>
+        </ol>
+        <p class="tx-muted" style="margin-top:10px">
+            如果課程之後有異動，重新匯出再匯入即可；建議先刪除舊的匯入行事曆，避免出現重複的課程。
+        </p>
+        <a class="tx-back" href="{% url 'pages:index' %}">返回選課系統</a>
+    </div>
+</div>
+{% endblock %}
